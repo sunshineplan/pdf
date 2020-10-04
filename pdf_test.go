@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestDecode(t *testing.T) {
+func Test(t *testing.T) {
 	b, err := ioutil.ReadFile("testdata/video-001.pdf")
 	if err != nil {
 		t.Error(err)
@@ -19,7 +19,12 @@ func TestDecode(t *testing.T) {
 	if _, err := DecodeConfig(bytes.NewBuffer(b)); err != nil {
 		t.Error("Failed to decode pdf config", err)
 	}
-	if _, _, err := image.Decode(bytes.NewBuffer(b)); err != nil {
+
+	img, _, err := image.Decode(bytes.NewBuffer(b))
+	if err != nil {
 		t.Error("Failed to decode pdf", err)
+	}
+	if err := Encode(ioutil.Discard, []image.Image{img}, nil); err != nil {
+		t.Error("Failed to encode pdf", err)
 	}
 }

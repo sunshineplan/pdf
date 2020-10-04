@@ -3,12 +3,21 @@ package pdf
 import (
 	"bytes"
 	"image"
+	"image/jpeg"
 	"io"
 	"io/ioutil"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
 )
+
+// DefaultQuality is the default quality encoding parameter.
+const DefaultQuality = 75
+
+// Options are the encoding parameters. Quality ranges from 1 to 100 inclusive, higher is better.
+type Options struct {
+	Quality int
+}
 
 func decode(r io.Reader) (io.Reader, error) {
 	conf := pdfcpu.NewDefaultConfiguration()
@@ -54,6 +63,29 @@ func DecodeConfig(r io.Reader) (cfg image.Config, err error) {
 	}
 	cfg, _, err = image.DecodeConfig(pr)
 	return
+}
+
+// Encode writes images to w.
+func Encode(w io.Writer, imgs []image.Image, o *Options) error {
+	quality := DefaultQuality
+	if o != nil {
+		quality = o.Quality
+		if quality < 1 {
+			quality = 1
+		} else if quality > 100 {
+			quality = 100
+		}
+	}
+
+	var rs []io.Reader
+	for _, i := range imgs {
+		var buf bytes.Buffer
+		if err := jpeg.Encode(&buf, i, &jpeg.Options{Quality: quality}); err != nil {
+			return err
+		}
+		rs = append(rs, &buf)
+	}
+	return api.ImportImages(nil, w, rs, nil, nil)
 }
 
 func init() {
