@@ -57,7 +57,7 @@ func DecodeConfig(r io.Reader) (cfg image.Config, err error) {
 	if err != nil {
 		return
 	}
-	cfg, _, err := image.DecodeConfig(pr)
+	cfg, _, err = image.DecodeConfig(pr)
 	return
 }
 
