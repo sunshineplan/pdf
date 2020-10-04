@@ -2,6 +2,7 @@ package pdf
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"io"
@@ -34,11 +35,11 @@ func decode(r io.Reader) (io.Reader, error) {
 		return nil, err
 	}
 	if ctx.PageCount > 0 {
-		img, err := ctx.ExtractPageImages(1)
-		if err != nil {
-			return nil, err
+		imgs, err := ctx.ExtractPageImages(1)
+		if err != nil || len(imgs) == 0 {
+			return nil, fmt.Errorf("extract page images error: %v", err)
 		}
-		return img[0], nil
+		return imgs[0], nil
 	}
 	return nil, err
 }
