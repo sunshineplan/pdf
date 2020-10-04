@@ -3,12 +3,16 @@ package pdf
 import (
 	"bytes"
 	"image"
+	_ "image/gif"  // decode gif format
+	_ "image/jpeg" // decode jpeg format
+	_ "image/png"  // decode png format
 	"io"
 	"io/ioutil"
 
-	"github.com/disintegration/imaging"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
+	_ "golang.org/x/image/bmp"  // decode bmp format
+	_ "golang.org/x/image/tiff" // decode tiff format
 )
 
 func decode(r io.Reader) (io.Reader, error) {
@@ -41,7 +45,7 @@ func Decode(r io.Reader) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	img, _, err := imaging.Decode(pr)
+	img, _, err := image.Decode(pr)
 	return img, err
 }
 
@@ -53,7 +57,7 @@ func DecodeConfig(r io.Reader) (cfg image.Config, err error) {
 	if err != nil {
 		return
 	}
-	cfg, _, err = imaging.DecodeConfig(pr)
+	cfg, _, err := image.DecodeConfig(pr)
 	return
 }
 
