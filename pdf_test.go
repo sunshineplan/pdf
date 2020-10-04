@@ -2,6 +2,7 @@ package pdf
 
 import (
 	"bytes"
+	"image"
 	"io/ioutil"
 	"testing"
 )
@@ -17,5 +18,8 @@ func TestDecode(t *testing.T) {
 	}
 	if _, err := DecodeConfig(bytes.NewBuffer(b)); err != nil {
 		t.Error("Failed to decode pdf config", err)
+	}
+	if _, _, err := image.Decode(bytes.NewBuffer(b)); err != nil {
+		t.Error("Failed to decode pdf", err)
 	}
 }

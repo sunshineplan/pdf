@@ -57,5 +57,5 @@ func DecodeConfig(r io.Reader) (cfg image.Config, err error) {
 }
 
 func init() {
-	image.RegisterFormat("pdf", "PDF", Decode, DecodeConfig)
+	image.RegisterFormat("pdf", "%PDF", Decode, DecodeConfig)
 }
