@@ -7,7 +7,7 @@ import (
 )
 
 func TestDecode(t *testing.T) {
-	b, err := ioutil.ReadFile("video-001.pdf")
+	b, err := ioutil.ReadFile("testdata/video-001.pdf")
 	if err != nil {
 		t.Error(err)
 		return
