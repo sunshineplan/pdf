@@ -3,16 +3,11 @@ package pdf
 import (
 	"bytes"
 	"image"
-	_ "image/gif"  // decode gif format
-	_ "image/jpeg" // decode jpeg format
-	_ "image/png"  // decode png format
 	"io"
 	"io/ioutil"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
-	_ "golang.org/x/image/bmp"  // decode bmp format
-	_ "golang.org/x/image/tiff" // decode tiff format
 )
 
 func decode(r io.Reader) (io.Reader, error) {
