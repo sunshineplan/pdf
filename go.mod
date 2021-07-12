@@ -1,4 +1,4 @@
-module github/sunshineplan/pdf
+module github.com/sunshineplan/pdf
 
 go 1.16
 
