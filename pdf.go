@@ -10,7 +10,7 @@ import (
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
-	_ "github.com/sunshineplan/tiff"
+	"github.com/sunshineplan/tiff"
 	_ "golang.org/x/image/webp"
 )
 
@@ -22,7 +22,7 @@ type Options struct {
 	Quality int
 }
 
-func decode(r io.Reader) ([]io.Reader, error) {
+func decodePDF(r io.Reader) ([]io.Reader, error) {
 	conf := pdfcpu.NewDefaultConfiguration()
 	conf.ValidationMode = pdfcpu.ValidationNone
 
@@ -63,28 +63,42 @@ func decode(r io.Reader) ([]io.Reader, error) {
 	return rs, nil
 }
 
-// Decode decodes a PDF file from r and returns first image as image.Image.
-func Decode(r io.Reader) (image.Image, error) {
-	pr, err := decode(r)
+func decodeImage(r io.Reader) (image.Image, error) {
+	b, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
 
-	img, _, err := image.Decode(pr[0])
+	img, format, err := image.Decode(bytes.NewBuffer(b))
+	if format == "tiff" && err != nil {
+		img, err = tiff.Decode(bytes.NewBuffer(b))
+	}
+
+	return img, err
+}
+
+// Decode decodes a PDF file from r and returns first image as image.Image.
+func Decode(r io.Reader) (image.Image, error) {
+	pr, err := decodePDF(r)
+	if err != nil {
+		return nil, err
+	}
+
+	img, err := decodeImage(pr[0])
 
 	return img, err
 }
 
 // DecodeAll decodes a PDF file from r and returns all images as image.Image.
 func DecodeAll(r io.Reader) ([]image.Image, error) {
-	pr, err := decode(r)
+	pr, err := decodePDF(r)
 	if err != nil {
 		return nil, err
 	}
 
 	var imgs []image.Image
 	for _, r := range pr {
-		img, _, err := image.Decode(r)
+		img, err := decodeImage(r)
 		if err != nil {
 			return nil, err
 		}
@@ -97,7 +111,7 @@ func DecodeAll(r io.Reader) ([]image.Image, error) {
 // DecodeConfig returns the color model and dimensions of a PDF first image without
 // decoding the entire image.
 func DecodeConfig(r io.Reader) (image.Config, error) {
-	pr, err := decode(r)
+	pr, err := decodePDF(r)
 	if err != nil {
 		return image.Config{}, err
 	}
