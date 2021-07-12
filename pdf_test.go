@@ -3,28 +3,42 @@ package pdf
 import (
 	"bytes"
 	"image"
-	"io/ioutil"
+	"io"
+	"os"
 	"testing"
 )
 
 func Test(t *testing.T) {
-	b, err := ioutil.ReadFile("testdata/video-001.pdf")
+	b, err := os.ReadFile("testdata/video-001.pdf")
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
-	if _, err := Decode(bytes.NewBuffer(b)); err != nil {
+	if _, _, err := image.Decode(bytes.NewBuffer(b)); err != nil {
 		t.Error("Failed to decode pdf", err)
 	}
-	if _, err := DecodeConfig(bytes.NewBuffer(b)); err != nil {
+	if _, _, err := image.DecodeConfig(bytes.NewBuffer(b)); err != nil {
 		t.Error("Failed to decode pdf config", err)
 	}
 
-	img, _, err := image.Decode(bytes.NewBuffer(b))
+	imgs, err := DecodeAll(bytes.NewBuffer(b))
 	if err != nil {
-		t.Error("Failed to decode pdf", err)
+		t.Fatal("Failed to decode pdf", err)
 	}
-	if err := Encode(ioutil.Discard, []image.Image{img}, nil); err != nil {
-		t.Error("Failed to encode pdf", err)
+	if err := Encode(io.Discard, imgs, nil); err != nil {
+		t.Fatal("Failed to encode pdf", err)
+	}
+}
+
+func Test2(t *testing.T) {
+	f, err := os.Open("testdata/testImage.pdf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	imgs, err := DecodeAll(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l := len(imgs); l != 2 {
+		t.Errorf("want 2 images, got %d", l)
 	}
 }

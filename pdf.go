@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
+	_ "image/png"
 	"io"
-	"io/ioutil"
 
-	"github.com/sunshineplan/pdfcpu/pkg/api"
-	"github.com/sunshineplan/pdfcpu/pkg/pdfcpu"
+	"github.com/pdfcpu/pdfcpu/pkg/api"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
+	_ "github.com/sunshineplan/tiff"
+	_ "golang.org/x/image/webp"
 )
 
 // DefaultQuality is the default quality encoding parameter.
@@ -20,50 +22,88 @@ type Options struct {
 	Quality int
 }
 
-func decode(r io.Reader) (io.Reader, error) {
+func decode(r io.Reader) ([]io.Reader, error) {
 	conf := pdfcpu.NewDefaultConfiguration()
 	conf.ValidationMode = pdfcpu.ValidationNone
-	b, err := ioutil.ReadAll(r)
+
+	b, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
+
 	ctx, err := pdfcpu.Read(bytes.NewReader(b), conf)
 	if err != nil {
 		return nil, err
 	}
+
 	if err := api.OptimizeContext(ctx); err != nil {
 		return nil, err
 	}
-	if ctx.PageCount > 0 {
-		imgs, err := ctx.ExtractPageImages(1)
-		if err != nil || len(imgs) == 0 {
-			return nil, fmt.Errorf("extract page images error: %v", err)
-		}
-		return imgs[0], nil
+	if ctx.PageCount == 0 {
+		return nil, fmt.Errorf("page count is zero")
 	}
-	return nil, err
+
+	var rs []io.Reader
+	for p := 1; p <= ctx.PageCount; p++ {
+		imgs, err := ctx.ExtractPageImages(p, false)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, img := range imgs {
+			if img.Reader != nil {
+				rs = append(rs, img)
+			}
+		}
+	}
+	if len(rs) == 0 {
+		return nil, fmt.Errorf("no image found")
+	}
+
+	return rs, nil
 }
 
-// Decode reads a PDF file from r and returns first image as an image.Image.
+// Decode decodes a PDF file from r and returns first image as image.Image.
 func Decode(r io.Reader) (image.Image, error) {
 	pr, err := decode(r)
 	if err != nil {
 		return nil, err
 	}
-	img, _, err := image.Decode(pr)
+
+	img, _, err := image.Decode(pr[0])
+
 	return img, err
+}
+
+// DecodeAll decodes a PDF file from r and returns all images as image.Image.
+func DecodeAll(r io.Reader) ([]image.Image, error) {
+	pr, err := decode(r)
+	if err != nil {
+		return nil, err
+	}
+
+	var imgs []image.Image
+	for _, r := range pr {
+		img, _, err := image.Decode(r)
+		if err != nil {
+			return nil, err
+		}
+		imgs = append(imgs, img)
+	}
+
+	return imgs, err
 }
 
 // DecodeConfig returns the color model and dimensions of a PDF first image without
 // decoding the entire image.
-func DecodeConfig(r io.Reader) (cfg image.Config, err error) {
-	var pr io.Reader
-	pr, err = decode(r)
+func DecodeConfig(r io.Reader) (image.Config, error) {
+	pr, err := decode(r)
 	if err != nil {
-		return
+		return image.Config{}, err
 	}
-	cfg, _, err = image.DecodeConfig(pr)
-	return
+	cfg, _, err := image.DecodeConfig(pr[0])
+
+	return cfg, err
 }
 
 // Encode writes images to w.
@@ -86,6 +126,7 @@ func Encode(w io.Writer, imgs []image.Image, o *Options) error {
 		}
 		rs = append(rs, &buf)
 	}
+
 	return api.ImportImages(nil, w, rs, nil, nil)
 }
 
