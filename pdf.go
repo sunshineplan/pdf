@@ -71,7 +71,7 @@ func decodeImage(r io.Reader) (image.Image, error) {
 
 	img, format, err := image.Decode(bytes.NewBuffer(b))
 	if format == "tiff" && err != nil {
-		img, err = tiff.Decode(bytes.NewBuffer(b))
+		return tiff.Decode(bytes.NewBuffer(b))
 	}
 
 	return img, err
@@ -84,9 +84,7 @@ func Decode(r io.Reader) (image.Image, error) {
 		return nil, err
 	}
 
-	img, err := decodeImage(pr[0])
-
-	return img, err
+	return decodeImage(pr[0])
 }
 
 // DecodeAll decodes a PDF file from r and returns all images as image.Image.
