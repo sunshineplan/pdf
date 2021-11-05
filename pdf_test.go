@@ -29,11 +29,12 @@ func Test(t *testing.T) {
 	}
 }
 
-func Test2(t *testing.T) {
+func TestDecodeAll(t *testing.T) {
 	f, err := os.Open("testdata/testImage.pdf")
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer f.Close()
 	imgs, err := DecodeAll(f)
 	if err != nil {
 		t.Fatal(err)
@@ -41,4 +42,27 @@ func Test2(t *testing.T) {
 	if l := len(imgs); l != 2 {
 		t.Errorf("want 2 images, got %d", l)
 	}
+}
+
+func TestEncodeFile(t *testing.T) {
+	if err := EncodeFile("test.tmp", []string{"testdata/video-001.pdf"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := EncodeFile("test.tmp", []string{"testdata/testImage.pdf"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Open("test.tmp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	imgs, err := DecodeAll(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l := len(imgs); l != 2 {
+		t.Errorf("want 2 images, got %d", l)
+	}
+	f.Close()
+	os.Remove("test.tmp")
 }
