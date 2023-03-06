@@ -11,6 +11,7 @@ import (
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 	"github.com/sunshineplan/tiff"
 	_ "golang.org/x/image/webp"
 )
@@ -24,8 +25,8 @@ type Options struct {
 }
 
 func decodePDF(r io.Reader) ([]io.Reader, error) {
-	conf := pdfcpu.NewDefaultConfiguration()
-	conf.ValidationMode = pdfcpu.ValidationNone
+	conf := model.NewDefaultConfiguration()
+	conf.ValidationMode = model.ValidationNone
 
 	b, err := io.ReadAll(r)
 	if err != nil {
@@ -46,7 +47,7 @@ func decodePDF(r io.Reader) ([]io.Reader, error) {
 
 	var rs []io.Reader
 	for p := 1; p <= ctx.PageCount; p++ {
-		imgs, err := ctx.ExtractPageImages(p, false)
+		imgs, err := pdfcpu.ExtractPageImages(ctx, p, false)
 		if err != nil {
 			return nil, err
 		}
