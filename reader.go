@@ -5,21 +5,27 @@ import (
 	"fmt"
 	"image"
 	"io"
-	"log"
+	"sync"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
+// Reader struct represents a PDF reader that holds a *model.Context.
 type Reader struct {
+	mu sync.Mutex
+
 	ctx *model.Context
 	p   int
 }
 
-func NewReader(rs io.ReadSeeker) (*Reader, error) {
-	conf := model.NewDefaultConfiguration()
-	conf.ValidationMode = model.ValidationNone
+// NewReader creates a new Reader from an io.ReadSeeker and a *model.Configuration.
+// If conf is nil, model.NewDefaultConfiguration() will be used.
+func NewReader(rs io.ReadSeeker, conf *model.Configuration) (*Reader, error) {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
 	ctx, err := pdfcpu.Read(rs, conf)
 	if err != nil {
 		return nil, err
@@ -33,32 +39,45 @@ func NewReader(rs io.ReadSeeker) (*Reader, error) {
 	return &Reader{ctx: ctx}, nil
 }
 
-func (r Reader) PageCount() int {
+// PageCount returns the number of pages in the PDF.
+func (r *Reader) PageCount() int {
 	return r.ctx.PageCount
 }
 
+// Next advances the Reader to the next page and returns true if there are more pages to read.
 func (r *Reader) Next() bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.p++
 	return r.p <= r.ctx.PageCount
 }
 
-func (r *Reader) Extract() (rs []io.Reader, err error) {
-	res, err := pdfcpu.ExtractPageImages(r.ctx, r.p, false)
-	if err != nil {
-		return
-	}
-	for _, v := range res {
-		rs = append(rs, v)
-	}
-	return
-}
-
-func (r *Reader) ExtractPageImages(pageNr int) (imgs []image.Image, err error) {
+// ExtractPage extracts all images from the specified page as []model.Image.
+func (r *Reader) ExtractPage(pageNr int) (imgs []model.Image, err error) {
 	m, err := pdfcpu.ExtractPageImages(r.ctx, pageNr, false)
 	if err != nil {
 		return
 	}
-	for _, r := range m {
+	for _, v := range m {
+		imgs = append(imgs, v)
+	}
+	return
+}
+
+// Extract extracts all images from the current page as []model.Image.
+func (r *Reader) Extract() ([]model.Image, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.ExtractPage(r.p)
+}
+
+// ExtractPageImages extracts all images from the specified page as []image.Image.
+func (r *Reader) ExtractPageImages(pageNr int) (imgs []image.Image, err error) {
+	res, err := r.ExtractPage(pageNr)
+	if err != nil {
+		return
+	}
+	for _, r := range res {
 		var img image.Image
 		img, _, err = image.Decode(r)
 		if err != nil {
@@ -69,7 +88,10 @@ func (r *Reader) ExtractPageImages(pageNr int) (imgs []image.Image, err error) {
 	return
 }
 
+// ExtractImages extracts all images from the current page as []image.Image.
 func (r *Reader) ExtractImages() ([]image.Image, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	return r.ExtractPageImages(r.p)
 }
 
@@ -78,7 +100,7 @@ func newReader(r io.Reader) (*Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewReader(bytes.NewReader(b))
+	return NewReader(bytes.NewReader(b), nil)
 }
 
 // Decode decodes a PDF file from r and returns first image as image.Image.
@@ -105,8 +127,7 @@ func DecodeAll(r io.Reader) ([]image.Image, error) {
 	for reader.Next() {
 		res, err := reader.ExtractImages()
 		if err != nil {
-			log.Print(err)
-			continue
+			return nil, err
 		}
 		imgs = append(imgs, res...)
 	}
