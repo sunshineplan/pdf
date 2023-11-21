@@ -71,6 +71,18 @@ func (r *Reader) Extract() ([]model.Image, error) {
 	return r.ExtractPage(r.p)
 }
 
+var _ error = formatError("")
+
+type formatError string
+
+func (err formatError) Error() string {
+	return fmt.Sprintf("image: unknown format: %s", string(err))
+}
+
+func (formatError) Unwrap() error {
+	return image.ErrFormat
+}
+
 // ExtractPageImages extracts all images from the specified page as []image.Image.
 func (r *Reader) ExtractPageImages(pageNr int) (imgs []image.Image, err error) {
 	res, err := r.ExtractPage(pageNr)
@@ -81,6 +93,9 @@ func (r *Reader) ExtractPageImages(pageNr int) (imgs []image.Image, err error) {
 		var img image.Image
 		img, _, err = image.Decode(r)
 		if err != nil {
+			if err == image.ErrFormat && r.FileType != "" {
+				err = formatError(r.FileType)
+			}
 			return
 		}
 		imgs = append(imgs, img)
