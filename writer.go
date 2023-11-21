@@ -71,7 +71,7 @@ func fileExists(filename string) bool {
 // EncodeFile appends images to outFile which will be created if necessary.
 func EncodeFile(outFile string, imgFiles []string, o *Options) (err error) {
 	var f1, f2 *os.File
-	rs := io.ReadSeeker(nil)
+	var rs io.ReadSeeker
 	tmpFile := outFile
 	if fileExists(outFile) {
 		if f1, err = os.Open(outFile); err != nil {

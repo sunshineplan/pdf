@@ -96,6 +96,9 @@ func (r *Reader) ExtractImages() ([]image.Image, error) {
 }
 
 func newReader(r io.Reader) (*Reader, error) {
+	if rs, ok := r.(io.ReadSeeker); ok {
+		return NewReader(rs, nil)
+	}
 	b, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err

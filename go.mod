@@ -1,6 +1,6 @@
 module github.com/sunshineplan/pdf
 
-go 1.20
+go 1.21
 
 require github.com/pdfcpu/pdfcpu v0.5.0
 
