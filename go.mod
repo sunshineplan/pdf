@@ -2,7 +2,7 @@ module github.com/sunshineplan/pdf
 
 go 1.21
 
-require github.com/pdfcpu/pdfcpu v0.6.0
+require github.com/pdfcpu/pdfcpu v0.7.0
 
 require (
 	github.com/hhrutter/lzw v1.0.0 // indirect
