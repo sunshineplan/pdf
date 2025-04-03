@@ -2,9 +2,11 @@ package pdf
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"image"
 	"io"
+	"slices"
 	"sync"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
@@ -52,16 +54,31 @@ func (r *Reader) Next() bool {
 	return r.p <= r.ctx.PageCount
 }
 
+type img struct {
+	objNr int
+	image model.Image
+}
+
 // ExtractPage extracts all images from the specified page as []model.Image.
-func (r *Reader) ExtractPage(pageNr int) (imgs []model.Image, err error) {
+func (r *Reader) ExtractPage(pageNr int) ([]model.Image, error) {
 	m, err := pdfcpu.ExtractPageImages(r.ctx, pageNr, false)
 	if err != nil {
-		return
+		return nil, err
 	}
-	for _, v := range m {
-		imgs = append(imgs, v)
+	var imgs []img
+	for k, v := range m {
+		if v.Reader != nil {
+			imgs = append(imgs, img{k, v})
+		}
 	}
-	return
+	slices.SortFunc(imgs, func(a, b img) int {
+		return cmp.Compare(a.objNr, b.objNr)
+	})
+	var res []model.Image
+	for _, i := range imgs {
+		res = append(res, i.image)
+	}
+	return res, nil
 }
 
 // Extract extracts all images from the current page as []model.Image.
@@ -131,6 +148,9 @@ func Decode(r io.Reader) (image.Image, error) {
 	imgs, err := reader.ExtractImages()
 	if err != nil {
 		return nil, err
+	}
+	if len(imgs) == 0 {
+		return nil, fmt.Errorf("no images found")
 	}
 	return imgs[0], nil
 }
