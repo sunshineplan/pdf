@@ -28,7 +28,7 @@ func NewReader(rs io.ReadSeeker, conf *model.Configuration) (*Reader, error) {
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
 	}
-	ctx, err := pdfcpu.Read(rs, conf)
+	ctx, err := api.ReadAndValidate(rs, conf)
 	if err != nil {
 		return nil, err
 	}
