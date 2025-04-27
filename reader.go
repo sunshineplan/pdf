@@ -28,11 +28,9 @@ func NewReader(rs io.ReadSeeker, conf *model.Configuration) (*Reader, error) {
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
 	}
-	ctx, err := api.ReadAndValidate(rs, conf)
+	conf.Cmd = model.EXTRACTIMAGES
+	ctx, err := api.ReadValidateAndOptimize(rs, conf)
 	if err != nil {
-		return nil, err
-	}
-	if err := api.OptimizeContext(ctx); err != nil {
 		return nil, err
 	}
 	if ctx.PageCount == 0 {
