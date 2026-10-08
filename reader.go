@@ -3,6 +3,7 @@ package pdf
 import (
 	"bytes"
 	"cmp"
+	"context"
 	"fmt"
 	"image"
 	"io"
@@ -29,7 +30,7 @@ func NewReader(rs io.ReadSeeker, conf *model.Configuration) (*Reader, error) {
 		conf = model.NewDefaultConfiguration()
 	}
 	conf.Cmd = model.EXTRACTIMAGES
-	ctx, err := api.ReadValidateAndOptimize(rs, conf)
+	ctx, err := api.ReadValidateAndOptimize(context.Background(), rs, conf, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +60,7 @@ type img struct {
 
 // ExtractPage extracts all images from the specified page as []model.Image.
 func (r *Reader) ExtractPage(pageNr int) ([]model.Image, error) {
-	m, err := pdfcpu.ExtractPageImages(r.ctx, pageNr, false)
+	m, err := pdfcpu.ExtractPageImages(context.Background(), r.ctx, pageNr, false)
 	if err != nil {
 		return nil, err
 	}
