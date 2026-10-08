@@ -2,6 +2,7 @@ package pdf
 
 import (
 	"bytes"
+	"context"
 	"image"
 	"image/jpeg"
 	"io"
@@ -20,12 +21,12 @@ type Options struct {
 
 // EncodeReader writes r to w.
 func EncodeReader(w io.Writer, r []io.Reader) error {
-	return api.ImportImages(nil, w, r, nil, nil)
+	return api.ImportImages(context.Background(), nil, w, r, nil, nil)
 }
 
 // Append appends images to w.
 func Append(rs io.ReadSeeker, w io.Writer, imgs []io.Reader) error {
-	return api.ImportImages(rs, w, imgs, nil, nil)
+	return api.ImportImages(context.Background(), rs, w, imgs, nil, nil)
 }
 
 func processImage(imgs []image.Image, o *Options) ([]io.Reader, error) {
